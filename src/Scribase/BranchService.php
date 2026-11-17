@@ -86,6 +86,39 @@ class BranchService
     }
 
     /**
+     * Normalises an environment id: empty means production.
+     */
+    public static function environment(?string $environmentId): string
+    {
+        return trim($environmentId ?? '') ?: self::PRODUCTION;
+    }
+
+    /**
+     * An explicit branch id, or the newest open, unmerged branch when none is given.
+     *
+     * @return string|array{error: string}
+     */
+    public function resolveBranch(string $org, string $project, ?string $branchId): string|array
+    {
+        $branchId = trim($branchId ?? '');
+        if ('' !== $branchId) {
+            return ScribaseTarget::validId($branchId) ? $branchId : ['error' => 'branchId must be lowercase letters, digits and dashes.'];
+        }
+
+        $open = $this->list($org, $project);
+        if (isset($open['error'])) {
+            return ['error' => 'no branchId given and the open branches could not be listed.'];
+        }
+        foreach ($open as $branch) {
+            if (!$branch['merged']) {
+                return $branch['branch_id'];
+            }
+        }
+
+        return ['error' => 'no branchId given and no branch is open. Create one with scribase_branch_create.'];
+    }
+
+    /**
      * Open branches of the project, newest first.
      *
      * @return list<array{branch_id: string, base: string, created_at: int|null, merged: bool}>|array{error: string, status: int, detail: mixed}

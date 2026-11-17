@@ -35,8 +35,11 @@ final class DatabaseTools
         if (isset($target['error'])) {
             return ToolResult::of($target);
         }
+        if (!ScribaseTarget::validId(BranchService::environment($environmentId))) {
+            return ToolResult::of(['error' => 'environmentId must be lowercase letters, digits and dashes.']);
+        }
 
-        return ToolResult::of($this->branches->lint($target[0], $target[1], trim($environmentId), $up, $down));
+        return ToolResult::of($this->branches->lint($target[0], $target[1], BranchService::environment($environmentId), $up, $down));
     }
 
     /**
@@ -55,6 +58,9 @@ final class DatabaseTools
         if (isset($target['error'])) {
             return ToolResult::of($target);
         }
+        if (!ScribaseTarget::validId(BranchService::environment($environmentId))) {
+            return ToolResult::of(['error' => 'environmentId must be lowercase letters, digits and dashes.']);
+        }
         if ('' === trim($query)) {
             return ToolResult::of(['error' => 'query is required (a single read-only SQL statement).']);
         }
@@ -64,7 +70,7 @@ final class DatabaseTools
             $payload['limit'] = max(1, min($limit, 1000));
         }
 
-        [$status, $body] = $this->client->request('POST', \sprintf('/v1/organizations/%s/projects/%s/environments/%s/database/query', $target[0], $target[1], trim($environmentId)), $payload);
+        [$status, $body] = $this->client->request('POST', \sprintf('/v1/organizations/%s/projects/%s/environments/%s/database/query', $target[0], $target[1], BranchService::environment($environmentId)), $payload);
         if (200 !== $status) {
             return ToolResult::of(['error' => 'query failed', 'status' => $status, 'detail' => $body]);
         }

@@ -19,7 +19,7 @@ no-login temporary projects).
    MCP server: bin/console mcp:server scribase   (also served over HTTP at /mcp)
      tools      scribase_lint_migration · scribase_branch_create · scribase_apply_on_branch
                 scribase_query · scribase_promote_branch · scribase_branch_discard · scribase_memory
-     resources  scribase://guide/branch-workflow
+     resources  scribase://guide/branch-workflow · scribase://branches
                 scribase://environments/{environment}/schema
                 scribase://branches/{branch}/diff
      prompt     review-migration
@@ -80,7 +80,7 @@ HUGGINGFACE_MODEL=Qwen/Qwen3-Coder-30B-A3B-Instruct   # any chat model with tool
 
 # or a free local model with Ollama
 PILOT_PLATFORM=ollama
-OLLAMA_MODEL=qwen2.5:3b    # after: ollama pull qwen2.5:3b
+OLLAMA_MODEL=qwen2.5:7b    # after: ollama pull qwen2.5:7b (3B models hallucinate branch ids)
 ```
 
 ```bash
@@ -89,7 +89,8 @@ bin/console pilot:review examples/migrations/add_bookmarks_unsafe.sql --goal "le
 
 The agent recalls earlier lessons, lints, rewrites the unsafe SQL with RLS and an owner policy, cuts a
 branch, applies, verifies with read-only SQL, asks to promote (you answer at the terminal), cleans up and
-stores a lesson.
+stores a lesson. Every MCP tool call it makes is printed as it happens, so you see what the model *did*,
+not just what it *says* it did. Whatever the model claims, only a human "yes" can merge.
 
 ### Use it from any MCP client
 
@@ -124,17 +125,21 @@ npx @modelcontextprotocol/inspector  # then connect to the URL above
 | Scribase layer | `src/Scribase/` | Typed client, branch lifecycle with guards, hex-encoded SQL literals for memory (no quote or backslash can ever reach SQL), PoW provisioning of free projects. |
 
 Commands: `pilot:bootstrap`, `pilot:rehearse`, `pilot:review`, `pilot:promote` (human-only CLI promotion),
-`pilot:verify-live`, plus the bundle's `mcp:server`.
+`pilot:branches [--discard]`, `pilot:verify-live`, plus the bundle's `mcp:server`.
+
+The server is bound to the one project in `.env.local`: tools never take organization or project ids, so a
+model cannot point it at another project, and ids are validated before they reach an API path. Branch tools
+default to the open branch when `branchId` is omitted.
 
 ## Quality
 
 ```bash
-composer test      # PHPUnit: 37 tests, no network (mocked API shapes captured from the live API)
+composer test      # PHPUnit: 41 tests, no network (mocked API shapes captured from the live API)
 composer phpstan   # PHPStan level 8, no baseline
 ```
 
 The MCP tests talk JSON-RPC to the real `/mcp` HTTP endpoint of the kernel (tools, resources, prompt,
-and a refused production write over MCP).
+a refused production write and a rejected path-escaping id over MCP).
 
 ## Notes and limits
 

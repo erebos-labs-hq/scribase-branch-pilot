@@ -57,7 +57,13 @@ final class ReviewCommand
 
         $io->title(\sprintf('Branch Pilot agent (%s) reviewing %s', $platform, basename($file)));
         $this->trace->attach($io);
-        $result = $agent->call(new MessageBag(Message::ofUser(ReviewMigrationPrompt::text($sql, $goal))));
+        try {
+            $result = $agent->call(new MessageBag(Message::ofUser(ReviewMigrationPrompt::text($sql, $goal))));
+        } catch (\Throwable $e) {
+            $io->error(['The model run failed: '.$e->getMessage(), 'Nothing was promoted: only a human "yes" at the promotion gate can merge. Small local models often emit broken tool calls; try a larger model or --platform huggingface. Run pilot:branches to see or discard a leftover branch.']);
+
+            return 1;
+        }
 
         $io->section('Agent report');
         $content = $result->getContent();

@@ -136,6 +136,19 @@ final class BranchServiceTest extends TestCase
         self::assertSame(['pilot-abc'], $result['open_branches']);
     }
 
+    public function testWithoutAnIdTheNewestUnmergedBranchIsUsed(): void
+    {
+        $api = new MockApi(['GET /v1/organizations/org/projects/proj/branches' => [200, ['branches' => [
+            ['environment_id' => 'merged-one', 'created_at' => 300, 'merged_at' => 301],
+            ['environment_id' => 'open-one', 'created_at' => 200, 'merged_at' => null],
+        ]]]]);
+        $branches = new BranchService($api->client());
+
+        self::assertSame('open-one', $branches->resolveBranch('org', 'proj', null));
+        self::assertSame('explicit', $branches->resolveBranch('org', 'proj', ' explicit '));
+        self::assertIsArray($branches->resolveBranch('org', 'proj', '../escape'));
+    }
+
     public function testDiscardRefusesProduction(): void
     {
         $api = new MockApi([]);

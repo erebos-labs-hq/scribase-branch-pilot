@@ -43,64 +43,79 @@ final class BranchTools
             return ToolResult::of($target);
         }
 
-        return ToolResult::of($this->branches->create($target[0], $target[1], $branchId, $baseEnvironmentId, $dataMode, $ttlHours));
+        return ToolResult::of($this->branches->create($target[0], $target[1], $branchId, BranchService::environment($baseEnvironmentId), $dataMode, $ttlHours));
     }
 
     /**
      * Lints a migration, then applies it to a preview branch. Refuses production and any non-branch environment, and refuses migrations with blocking lint findings.
      *
-     * @param string      $branchId the preview branch to change
      * @param string      $up       forward SQL of the migration
+     * @param string|null $branchId the preview branch to change; defaults to the open branch
      * @param string|null $down     optional reverse SQL
      * @param string      $name     short snake_case name for the migration
      *
      * @return array<string, mixed>
      */
     #[McpTool(name: 'scribase_apply_on_branch', annotations: new ToolAnnotations(title: 'Apply a migration to a branch (never production)', readOnlyHint: false, destructiveHint: true, openWorldHint: true))]
-    public function apply(string $branchId, string $up, ?string $down = null, string $name = 'pilot_migration'): array
+    public function apply(string $up, ?string $branchId = null, ?string $down = null, string $name = 'pilot_migration'): array
     {
         $target = $this->target->resolve();
         if (isset($target['error'])) {
             return ToolResult::of($target);
         }
 
-        return ToolResult::of($this->branches->applyOnBranch($target[0], $target[1], trim($branchId), $up, $down, $name));
+        $branch = $this->branches->resolveBranch($target[0], $target[1], $branchId);
+        if (\is_array($branch)) {
+            return ToolResult::of($branch);
+        }
+
+        return ToolResult::of($this->branches->applyOnBranch($target[0], $target[1], $branch, $up, $down, $name));
     }
 
     /**
      * Plans the merge of a branch into its base and, only after a human confirms through MCP elicitation, performs it. Without a human it never merges.
      *
-     * @param string $branchId          the preview branch to promote
+     * @param string|null $branchId   the preview branch to promote; defaults to the open branch
      * @param string $baseEnvironmentId the environment to merge into
      *
      * @return array<string, mixed>
      */
     #[McpTool(name: 'scribase_promote_branch', annotations: new ToolAnnotations(title: 'Promote a branch (asks a human first)', readOnlyHint: false, destructiveHint: true, openWorldHint: true))]
-    public function promote(string $branchId, RequestContext $context, string $baseEnvironmentId = BranchService::PRODUCTION): array
+    public function promote(RequestContext $context, ?string $branchId = null, string $baseEnvironmentId = BranchService::PRODUCTION): array
     {
         $target = $this->target->resolve();
         if (isset($target['error'])) {
             return ToolResult::of($target);
         }
 
-        return ToolResult::of($this->gate->promote($target[0], $target[1], trim($branchId), $baseEnvironmentId, $context->getClientGateway()));
+        $branch = $this->branches->resolveBranch($target[0], $target[1], $branchId);
+        if (\is_array($branch)) {
+            return ToolResult::of($branch);
+        }
+
+        return ToolResult::of($this->gate->promote($target[0], $target[1], $branch, BranchService::environment($baseEnvironmentId), $context->getClientGateway()));
     }
 
     /**
      * Deletes a preview branch right away instead of waiting for its TTL. Refuses non-branch environments.
      *
-     * @param string $branchId the preview branch to delete
+     * @param string|null $branchId the preview branch to delete; defaults to the open branch
      *
      * @return array<string, mixed>
      */
     #[McpTool(name: 'scribase_branch_discard', annotations: new ToolAnnotations(title: 'Discard a branch', readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true))]
-    public function discard(string $branchId): array
+    public function discard(?string $branchId = null): array
     {
         $target = $this->target->resolve();
         if (isset($target['error'])) {
             return ToolResult::of($target);
         }
 
-        return ToolResult::of($this->branches->discard($target[0], $target[1], trim($branchId)));
+        $branch = $this->branches->resolveBranch($target[0], $target[1], $branchId);
+        if (\is_array($branch)) {
+            return ToolResult::of($branch);
+        }
+
+        return ToolResult::of($this->branches->discard($target[0], $target[1], $branch));
     }
 }

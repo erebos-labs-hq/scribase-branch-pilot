@@ -18,7 +18,7 @@ ai:
                 # The agent reaches the tools through a real MCP client connection to this app's own MCP server.
                 - mcp_server: 'pilot.scribase'
                   prefix: 'pilot_'
-            max_tool_calls: 30
+            max_tool_calls: 20
             fault_tolerant_toolbox: true
         pilot_ollama:
             platform: 'ai.platform.ollama'
@@ -28,5 +28,5 @@ ai:
             tools:
                 - mcp_server: 'pilot.scribase'
                   prefix: 'pilot_'
-            max_tool_calls: 30
+            max_tool_calls: 20
             fault_tolerant_toolbox: true

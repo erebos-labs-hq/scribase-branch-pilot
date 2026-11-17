@@ -39,7 +39,10 @@ final class MemoryTool
         if (isset($target['error'])) {
             return ToolResult::of($target);
         }
+        if (!ScribaseTarget::validId(BranchService::environment($environmentId))) {
+            return ToolResult::of(['error' => 'environmentId must be lowercase letters, digits and dashes.']);
+        }
 
-        return ToolResult::of($this->memory->handle($action, $target[0], $target[1], trim($environmentId), $scope, $content, $metadata, $memoryId, $query, $limit));
+        return ToolResult::of($this->memory->handle($action, $target[0], $target[1], BranchService::environment($environmentId), $scope, $content, $metadata, $memoryId, $query, $limit));
     }
 }

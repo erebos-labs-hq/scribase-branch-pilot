@@ -65,7 +65,7 @@ final class McpServerTest extends WebTestCase
         ], array_keys($tools));
         self::assertTrue($tools['scribase_query']['annotations']['readOnlyHint'] ?? null);
         self::assertTrue($tools['scribase_promote_branch']['annotations']['destructiveHint'] ?? null);
-        self::assertSame(['branchId', 'up'], $tools['scribase_apply_on_branch']['inputSchema']['required'] ?? null);
+        self::assertSame(['up'], $tools['scribase_apply_on_branch']['inputSchema']['required'] ?? null, 'branchId defaults to the open branch');
         self::assertArrayNotHasKey('context', $tools['scribase_promote_branch']['inputSchema']['properties'] ?? [], 'RequestContext is injected, not a model argument');
 
         $templates = array_column($this->rpc('resources/templates/list')['result']['resourceTemplates'] ?? [], 'uriTemplate');
@@ -91,6 +91,14 @@ final class McpServerTest extends WebTestCase
         $text = $result['result']['messages'][0]['content']['text'] ?? '';
         self::assertStringContainsString('create table public.x', $text);
         self::assertStringContainsString('Goal: demo', $text);
+    }
+
+    public function testAnEnvironmentIdCannotEscapeTheApiPath(): void
+    {
+        $result = $this->rpc('tools/call', ['name' => 'scribase_query', 'arguments' => ['query' => 'select 1', 'environmentId' => '../../organizations']]);
+
+        self::assertTrue($result['result']['isError'] ?? null);
+        self::assertStringContainsString('environmentId must be', $result['result']['content'][0]['text'] ?? '');
     }
 
     public function testApplyingToProductionIsRefusedOverMcp(): void

@@ -38,9 +38,9 @@ final class ReviewMigrationPrompt
             1. scribase_memory action=search scope=migrations to recall lessons from earlier reviews.
             2. scribase_lint_migration on production. If it is blocked, explain the findings, propose a fixed SQL and continue with the fixed SQL.
             3. scribase_branch_create (dataMode schema_only, ttlHours 1).
-            4. scribase_apply_on_branch with the (possibly fixed) SQL.
-            5. scribase_query on the branch to verify the new objects exist (for example query pg_tables / pg_policies).
-            6. scribase_promote_branch. A human decides; never claim it was merged unless the tool says status=merged.
+            4. scribase_apply_on_branch with the (possibly fixed) SQL. Use the branch_id returned in step 3 (or omit branchId: the open branch is used).
+            5. scribase_query with environmentId = that branch_id to verify the new objects exist (for example query pg_tables / pg_policies).
+            6. scribase_promote_branch (same branch). A human decides; never claim it was merged unless the tool says status=merged.
             7. If not merged, scribase_branch_discard the branch.
             8. scribase_memory action=store scope=migrations with a one-line lesson.
 
