@@ -1,0 +1,15 @@
+# see https://symfony.com/doc/current/reference/configuration/framework.html
+framework:
+    secret: '%env(APP_SECRET)%'
+    session: true
+
+    # Local models on a CPU can take minutes per turn.
+    http_client:
+        default_options:
+            timeout: 600
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

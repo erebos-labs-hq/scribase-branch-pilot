@@ -1,0 +1,32 @@
+ai:
+    platform:
+        # Hugging Face Inference Providers (one HF token, many open models).
+        huggingface:
+            api_key: '%env(HUGGINGFACE_API_KEY)%'
+            provider: '%env(default::HUGGINGFACE_PROVIDER)%'
+        # Free local fallback: https://ollama.com, e.g. `ollama pull qwen3:4b`.
+        ollama:
+            endpoint: '%env(OLLAMA_URL)%'
+
+    agent:
+        pilot_hf:
+            platform: 'ai.platform.huggingface'
+            model: '%env(HUGGINGFACE_MODEL)%'
+            prompt:
+                file: '%kernel.project_dir%/config/pilot_system_prompt.md'
+            tools:
+                # The agent reaches the tools through a real MCP client connection to this app's own MCP server.
+                - mcp_server: 'pilot.scribase'
+                  prefix: 'pilot_'
+            max_tool_calls: 30
+            fault_tolerant_toolbox: true
+        pilot_ollama:
+            platform: 'ai.platform.ollama'
+            model: '%env(OLLAMA_MODEL)%'
+            prompt:
+                file: '%kernel.project_dir%/config/pilot_system_prompt.md'
+            tools:
+                - mcp_server: 'pilot.scribase'
+                  prefix: 'pilot_'
+            max_tool_calls: 30
+            fault_tolerant_toolbox: true

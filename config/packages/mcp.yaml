@@ -1,0 +1,28 @@
+mcp:
+    servers:
+        scribase:
+            name: scribase-branch-pilot
+            version: '0.1.0'
+            description: 'Branch-per-task Postgres for AI agents: rehearse migrations on throwaway Scribase branches, promote only with human approval.'
+            instructions: 'Read scribase://guide/branch-workflow first. Never change production directly: create a branch, apply there, then call scribase_promote_branch, which asks the human.'
+            registry: ['App\Mcp\']
+            transports:
+                stdio: true
+                http: true
+            http:
+                path: /mcp
+
+    clients:
+        pilot:
+            client_info:
+                name: branch-pilot-agent
+                version: '0.1.0'
+            # The agent's human-in-the-loop: answers the server's elicitation/create requests at the terminal.
+            elicitation: App\Pilot\ConsoleElicitation
+            request_timeout: 900
+            servers:
+                scribase:
+                    transport: stdio
+                    command: ['%kernel.project_dir%/bin/console', 'mcp:server', 'scribase', '--no-debug']
+                    cwd: '%kernel.project_dir%'
+                    inherit_env: true
