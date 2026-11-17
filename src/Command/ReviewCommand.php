@@ -59,14 +59,19 @@ final class ReviewCommand
         $this->trace->attach($io);
         try {
             $result = $agent->call(new MessageBag(Message::ofUser(ReviewMigrationPrompt::text($sql, $goal))));
+            // Results are lazy: transport and API errors surface when the content is read.
+            $content = $result->getContent();
         } catch (\Throwable $e) {
-            $io->error(['The model run failed: '.$e->getMessage(), 'Nothing was promoted: only a human "yes" at the promotion gate can merge. Small local models often emit broken tool calls; try a larger model or --platform huggingface. Run pilot:branches to see or discard a leftover branch.']);
+            $io->error([
+                'The model run failed: '.$e->getMessage(),
+                'Nothing was promoted: only a human "yes" at the promotion gate can merge. Run pilot:branches to see or discard a leftover branch.',
+                'Hugging Face: the token needs the "Make calls to Inference Providers" permission and the account needs credits (HTTP 402 otherwise). Small local models often emit broken tool calls; use a larger model.',
+            ]);
 
             return 1;
         }
 
         $io->section('Agent report');
-        $content = $result->getContent();
         $io->writeln(\is_string($content) ? $content : (string) json_encode($content, \JSON_PRETTY_PRINT));
 
         return 0;

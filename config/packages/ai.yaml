@@ -4,6 +4,18 @@ ai:
         huggingface:
             api_key: '%env(HUGGINGFACE_API_KEY)%'
             provider: '%env(default::HUGGINGFACE_PROVIDER)%'
+            model_catalog:
+                # Newer tool-calling models that the bundled catalog does not list yet.
+                models:
+                    'Qwen/Qwen3-Coder-30B-A3B-Instruct':
+                        class: 'Symfony\AI\Platform\Bridge\HuggingFace\Completions'
+                        capabilities: [input-messages, output-text, output-streaming, tool-calling, output-structured]
+                    'Qwen/Qwen3-Coder-480B-A35B-Instruct':
+                        class: 'Symfony\AI\Platform\Bridge\HuggingFace\Completions'
+                        capabilities: [input-messages, output-text, output-streaming, tool-calling, output-structured]
+                    'openai/gpt-oss-20b':
+                        class: 'Symfony\AI\Platform\Bridge\HuggingFace\Completions'
+                        capabilities: [input-messages, output-text, output-streaming, tool-calling, output-structured]
         # Free local fallback: https://ollama.com, e.g. `ollama pull qwen3:4b`.
         ollama:
             endpoint: '%env(OLLAMA_URL)%'
