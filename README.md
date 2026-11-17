@@ -9,6 +9,11 @@ Built for the [Symfony AI & MCP Hackathon](https://symfony.com/hackathon) with S
 [Scribase](https://scribase.com) (hosted Postgres with branching, a migration linter and free,
 no-login temporary projects).
 
+**Demo video (83 s):** [scribase-branch-pilot-demo.mp4](https://github.com/erebos-labs-hq/scribase-branch-pilot/releases/download/v0.1.0/scribase-branch-pilot-demo.mp4)
+(release [v0.1.0](https://github.com/erebos-labs-hq/scribase-branch-pilot/releases/tag/v0.1.0)): a real terminal recording
+of the MCP server, the linter blocking an unsafe migration, the fixed migration rehearsed on a branch, and the
+human y/N promotion gate.
+
 ```
  you ──► pilot:review add_bookmarks.sql
             │
@@ -76,7 +81,7 @@ Pick one model provider and put it in `.env.local`:
 # Hugging Face Inference Providers: a fine-grained token with "Make calls to Inference Providers"
 PILOT_PLATFORM=huggingface
 HUGGINGFACE_API_KEY=hf_...
-HUGGINGFACE_MODEL=Qwen/Qwen3-Coder-30B-A3B-Instruct   # any chat model with tool calling
+HUGGINGFACE_MODEL=Qwen/Qwen3-Coder-30B-A3B-Instruct   # a tool-calling chat model, see below
 
 # or a free local model with Ollama
 PILOT_PLATFORM=ollama
@@ -87,7 +92,13 @@ OLLAMA_MODEL=qwen2.5:7b    # after: ollama pull qwen2.5:7b (3B models hallucinat
 bin/console pilot:review examples/migrations/add_bookmarks_unsafe.sql --goal "let users save bookmarks"
 ```
 
-The agent recalls earlier lessons, lints, rewrites the unsafe SQL with RLS and an owner policy, cuts a
+Hugging Face notes: the model must be known to the platform's model catalog. `config/packages/ai.yaml`
+registers `Qwen/Qwen3-Coder-30B-A3B-Instruct`, `Qwen/Qwen3-Coder-480B-A35B-Instruct` and `openai/gpt-oss-20b`
+on top of the bundled list; add another model there (class `Completions`, with `tool-calling`) to use it.
+Inference Providers are billed per token: an account without credits gets HTTP 402, which `pilot:review`
+reports without touching anything.
+
+With a capable model the agent recalls earlier lessons, lints, rewrites the unsafe SQL with RLS and an owner policy, cuts a
 branch, applies, verifies with read-only SQL, asks to promote (you answer at the terminal), cleans up and
 stores a lesson. Every MCP tool call it makes is printed as it happens, so you see what the model *did*,
 not just what it *says* it did. Whatever the model claims, only a human "yes" can merge.
@@ -155,6 +166,12 @@ a refused production write and a rejected path-escaping id over MCP).
   promotion gate means a confused model still cannot merge anything. Use a tool-calling model of 30B+
   (the Hugging Face default) for a clean run. With Ollama, cap `num_predict` (for example 2048) so a
   runaway generation cannot stall the loop.
+
+## Recording the demo
+
+`demo/run.sh` is the scripted terminal session (every command runs for real against a temporary project),
+`demo/mcp-list.sh` lists what the MCP server exposes over stdio, and `demo/make_video.py` turns asciinema
+recordings of it into the captioned 1920x1080 video. Output is only re-timed, never edited.
 
 ## License
 
