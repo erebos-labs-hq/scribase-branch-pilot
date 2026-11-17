@@ -134,7 +134,7 @@ default to the open branch when `branchId` is omitted.
 ## Quality
 
 ```bash
-composer test      # PHPUnit: 41 tests, no network (mocked API shapes captured from the live API)
+composer test      # PHPUnit: 42 tests, no network (mocked API shapes captured from the live API)
 composer phpstan   # PHPStan level 8, no baseline
 ```
 
@@ -150,6 +150,11 @@ a refused production write and a rejected path-escaping id over MCP).
   merge. Data written on a branch is not copied back.
 - Secrets (`SCRIBASE_API_KEY`, `HUGGINGFACE_API_KEY`) live in `.env.local`, which is git-ignored. The API
   key is never a tool argument, so a model cannot read or exfiltrate it through a tool call.
+- Agent quality depends on the model. Small CPU models (qwen2.5 3B/7B on Ollama) drive the tools but
+  often invent branch ids or loop; the tools answer with the real open branch to steer them, and the
+  promotion gate means a confused model still cannot merge anything. Use a tool-calling model of 30B+
+  (the Hugging Face default) for a clean run. With Ollama, cap `num_predict` (for example 2048) so a
+  runaway generation cannot stall the loop.
 
 ## License
 

@@ -149,6 +149,18 @@ final class BranchServiceTest extends TestCase
         self::assertIsArray($branches->resolveBranch('org', 'proj', '../escape'));
     }
 
+    public function testAnInventedBranchIdPointsAtTheRealOpenBranch(): void
+    {
+        $api = new MockApi(['GET /v1/organizations/org/projects/proj/branches' => [200, ['branches' => [
+            ['environment_id' => 'pilot-real', 'created_at' => 200, 'merged_at' => null],
+        ]]]]);
+        $refusal = (new BranchService($api->client()))->assertIsBranch('org', 'proj', 'branch-1234567890');
+
+        self::assertNotNull($refusal);
+        self::assertSame(['pilot-real'], $refusal['open_branches'] ?? null);
+        self::assertStringContainsString('Open branches: pilot-real', (string) $refusal['error']);
+    }
+
     public function testDiscardRefusesProduction(): void
     {
         $api = new MockApi([]);

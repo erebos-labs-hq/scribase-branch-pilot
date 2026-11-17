@@ -160,7 +160,10 @@ class BranchService
 
         [$status, $env] = $this->client->getEnvironment($org, $project, $environmentId);
         if (404 === $status) {
-            return ['error' => "branch '{$environmentId}' does not exist."];
+            $open = $this->list($org, $project);
+            $ids = isset($open['error']) ? [] : array_column($open, 'branch_id');
+
+            return ['error' => "branch '{$environmentId}' does not exist.".([] === $ids ? ' No branch is open; create one with scribase_branch_create.' : ' Use the branch_id returned by scribase_branch_create, or omit branchId. Open branches: '.implode(', ', $ids).'.'), 'open_branches' => $ids];
         }
         if (200 !== $status || !\is_array($env)) {
             return ['error' => 'could not read the environment', 'status' => $status, 'detail' => $env];
