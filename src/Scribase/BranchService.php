@@ -49,6 +49,14 @@ class BranchService
             'postgres_major' => self::POSTGRES_MAJOR, 'ttl_hours' => $ttlHours, 'base_environment_id' => $base,
         ], ['Idempotency-Key' => ScribaseClient::idempotencyKey()]);
 
+        if (403 === $status && \is_array($body) && 'temporary_branch_limit' === ($body['code'] ?? null)) {
+            $open = $this->list($org, $project);
+
+            return [
+                'error' => 'this project allows one branch at a time and one is already open. Reuse it, or discard it first with scribase_branch_discard.',
+                'open_branches' => isset($open['error']) ? [] : array_column($open, 'branch_id'),
+            ];
+        }
         if (!\in_array($status, [200, 202], true) || !\is_array($body)) {
             return ['error' => 'failed to create branch', 'status' => $status, 'detail' => $body];
         }
@@ -75,6 +83,35 @@ class BranchService
             'ttl_hours' => $ttlHours,
             'next_step' => "Apply migrations with scribase_apply_on_branch(branchId: '{$branchId}'), inspect with scribase_query, then ask for scribase_promote_branch or scribase_branch_discard. It self-deletes after {$ttlHours}h.",
         ];
+    }
+
+    /**
+     * Open branches of the project, newest first.
+     *
+     * @return list<array{branch_id: string, base: string, created_at: int|null, merged: bool}>|array{error: string, status: int, detail: mixed}
+     */
+    public function list(string $org, string $project): array
+    {
+        [$status, $body] = $this->client->request('GET', "/v1/organizations/{$org}/projects/{$project}/branches");
+        if (200 !== $status || !\is_array($body)) {
+            return ['error' => 'could not list branches', 'status' => $status, 'detail' => $body];
+        }
+
+        $branches = [];
+        foreach (\is_array($body['branches'] ?? null) ? $body['branches'] : [] as $branch) {
+            if (!\is_array($branch) || !\is_string($branch['environment_id'] ?? null)) {
+                continue;
+            }
+            $branches[] = [
+                'branch_id' => $branch['environment_id'],
+                'base' => \is_string($branch['base'] ?? null) ? $branch['base'] : self::PRODUCTION,
+                'created_at' => \is_int($branch['created_at'] ?? null) ? $branch['created_at'] : null,
+                'merged' => null !== ($branch['merged_at'] ?? null),
+            ];
+        }
+        usort($branches, static fn (array $a, array $b): int => ($b['created_at'] ?? 0) <=> ($a['created_at'] ?? 0));
+
+        return $branches;
     }
 
     /**

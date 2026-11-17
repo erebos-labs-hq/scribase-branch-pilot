@@ -72,6 +72,9 @@ final class McpServerTest extends WebTestCase
         self::assertContains('scribase://environments/{environment}/schema', $templates);
         self::assertContains('scribase://branches/{branch}/diff', $templates);
 
+        $resources = array_column($this->rpc('resources/list')['result']['resources'] ?? [], 'uri');
+        self::assertEqualsCanonicalizing(['scribase://guide/branch-workflow', 'scribase://branches'], $resources);
+
         $prompts = array_column($this->rpc('prompts/list')['result']['prompts'] ?? [], 'name');
         self::assertSame(['review-migration'], $prompts);
     }

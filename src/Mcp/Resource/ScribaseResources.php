@@ -41,6 +41,17 @@ final class ScribaseResources
         return self::GUIDE;
     }
 
+    #[McpResource(uri: 'scribase://branches', name: 'open-branches', description: 'Branches currently open in the project.', mimeType: 'application/json')]
+    public function branches(): string
+    {
+        $target = $this->target->resolve();
+        if (isset($target['error'])) {
+            return $target['error'];
+        }
+
+        return (string) json_encode(['branches' => $this->branches->list($target[0], $target[1])], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES);
+    }
+
     #[McpResourceTemplate(uriTemplate: 'scribase://environments/{environment}/schema', name: 'environment-schema', description: 'Tables, columns, RLS and policies of an environment or branch.', mimeType: 'text/markdown')]
     public function schema(string $environment): string
     {

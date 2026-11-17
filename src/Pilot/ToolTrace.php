@@ -27,6 +27,9 @@ final class ToolTrace
     {
         $result = $event->getResult()->getResult();
         $status = \is_array($result) && \is_string($result['status'] ?? null) ? $result['status'] : 'ok';
+        if (\is_array($result) && \is_string($result['branch_id'] ?? null)) {
+            $status .= ' (branch '.$result['branch_id'].')';
+        }
         $this->line('<info>✔</info>', $event->getDefinition()->getName(), $event->getArguments(), $status);
     }
 

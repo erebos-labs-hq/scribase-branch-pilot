@@ -110,6 +110,32 @@ final class BranchServiceTest extends TestCase
         self::assertFalse($api->requests[0]['body']['force'] ?? null);
     }
 
+    public function testListReturnsOpenBranchesNewestFirst(): void
+    {
+        $api = new MockApi(['GET /v1/organizations/org/projects/proj/branches' => [200, ['branches' => [
+            ['environment_id' => 'old', 'created_at' => 100, 'merged_at' => null, 'base' => 'production'],
+            ['environment_id' => 'new', 'created_at' => 200, 'merged_at' => 300, 'base' => 'production'],
+        ], 'lineage_failures' => []]]]);
+
+        $branches = (new BranchService($api->client()))->list('org', 'proj');
+
+        self::assertSame(['new', 'old'], array_column($branches, 'branch_id'));
+        self::assertSame([true, false], array_column($branches, 'merged'));
+    }
+
+    public function testTheOneBranchLimitNamesTheBranchToReuse(): void
+    {
+        $api = new MockApi([
+            'POST /v1/environments' => [403, ['code' => 'temporary_branch_limit', 'detail' => 'a temporary project can have 1 branch at a time']],
+            'GET /v1/organizations/org/projects/proj/branches' => [200, ['branches' => [['environment_id' => 'pilot-abc', 'created_at' => 1]]]],
+        ]);
+
+        $result = (new BranchService($api->client()))->create('org', 'proj', 'feature');
+
+        self::assertStringContainsString('one branch at a time', $result['error']);
+        self::assertSame(['pilot-abc'], $result['open_branches']);
+    }
+
     public function testDiscardRefusesProduction(): void
     {
         $api = new MockApi([]);
